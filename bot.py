@@ -13,7 +13,7 @@ import time
 # ==================== CONFIGURACIÓN ====================
 # ⚠️ REEMPLAZAR CON TUS TOKENS REALES
 TOKEN_CLIENTE = "8120597277:AAFsKTgowtm_rApAotAL0L-lYhyQEvJ1m4g"  # Token de @RecargasRBot
-TOKEN_ADMIN = "TU_TOKEN_DEL_BOT_ADMIN_AQUÍ"      # Token de @AdminRecargasRBot
+TOKEN_ADMIN = "8410026862:AAEq0HxRKFV-tjz9U8RVfwS74mgL3ELa1Dc"      # Token de @AdminRecargasRBot
 
 # ⚠️ REEMPLAZAR CON TU INFORMACIÓN REAL
 NUMERO_RECIBIR_SALDO = "50321300"
