@@ -1935,16 +1935,100 @@ def run_bots_webhook():
     # Ejecutar
     asyncio.run(setup_webhooks())
 
-# ==================== EJECUCIÓN PRINCIPAL ====================
-if __name__ == '__main__':
-    # Usar la versión corregida con asyncio (recomendado para Render)
+# ==================== EJECUCIÓN PRINCIPAL (VERSIÓN SIMPLE) ====================
+def run_bots():
+    """Versión simplificada y corregida para Render"""
+    import asyncio
+    import sys
+    
+    # Inicializar base de datos
+    init_database()
+    
+    print("""
+    ============================================
+    🚀 SISTEMA DE RECARGAS RÁPIDAS - INICIANDO
+    ============================================
+    """)
+    
+    async def run_cliente():
+        """Ejecutar bot cliente"""
+        app = Application.builder().token(TOKEN_CLIENTE).build()
+        
+        # Configurar handlers del cliente
+        app.add_handler(CommandHandler("start", start))
+        app.add_handler(CallbackQueryHandler(button_handler_cliente))
+        app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, recibir_numero))
+        app.add_handler(MessageHandler(filters.PHOTO, recibir_captura_pago))
+        
+        global cliente_app
+        cliente_app = app
+        
+        print("🤖 Bot CLIENTE iniciado")
+        await app.run_polling(
+            allowed_updates=['message', 'callback_query'],
+            drop_pending_updates=True,
+            close_loop=False
+        )
+    
+    async def run_admin():
+        """Ejecutar bot admin"""
+        # Pequeña pausa para evitar conflictos
+        await asyncio.sleep(2)
+        
+        app = Application.builder().token(TOKEN_ADMIN).build()
+        
+        # Configurar handlers del admin
+        app.add_handler(CommandHandler("admin", admin))
+        app.add_handler(CommandHandler("fondosno", fondos_no))
+        app.add_handler(CommandHandler("fondosyes", fondos_yes))
+        app.add_handler(CallbackQueryHandler(button_handler_admin))
+        app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, recibir_nuevo_precio_admin))
+        
+        # Configurar JobQueue si está disponible
+        try:
+            if hasattr(app, 'job_queue') and app.job_queue is not None:
+                app.job_queue.run_repeating(monitorear_nuevas_solicitudes, interval=30, first=10)
+                print("✅ JobQueue configurado para admin")
+        except Exception as e:
+            print(f"⚠️ JobQueue no disponible: {e}")
+        
+        global admin_app
+        admin_app = app
+        
+        print("🛠️ Bot ADMIN iniciado")
+        await app.run_polling(
+            allowed_updates=['message', 'callback_query'],
+            drop_pending_updates=True,
+            close_loop=False
+        )
+    
+    async def main():
+        """Función principal asíncrona"""
+        # Ejecutar ambos bots concurrentemente
+        await asyncio.gather(
+            run_cliente(),
+            run_admin(),
+            return_exceptions=True  # Importante para evitar que uno detenga al otro
+        )
+    
+    # Manejar el event loop correctamente para Python 3.13
+    if sys.platform == 'win32':
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+    
     try:
-        run_bots()
+        # Esta es la forma CORRECTA para Python 3.13 en Render
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(main())
     except KeyboardInterrupt:
         print("\n🛑 Sistema detenido por el usuario")
     except Exception as e:
-        print(f"\n❌ Error crítico: {e}")
-        print("⚠️ Reiniciando en 5 segundos...")
-        time.sleep(5)
+        print(f"\n❌ Error: {e}")
+        print("🔄 Reiniciando en 10 segundos...")
+        import time
+        time.sleep(10)
         # Intentar reiniciar
         run_bots()
+
+if __name__ == '__main__':
+    run_bots()
