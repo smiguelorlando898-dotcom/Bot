@@ -19,7 +19,7 @@ TOKEN_ADMIN = "8410026862:AAEq0HxRKFV-tjz9U8RVfwS74mgL3ELa1Dc"      # Token de @
 NUMERO_RECIBIR_SALDO = "50321300"
 ADMIN_USERNAME = "@landitho9"  # Tu username de Telegram (con @)
 BOT_USERNAME = "@RecargasRBot"  # Nombre del bot cliente
-BOT_USERNAME_ADMIN = "@AdminRecargasRBot"  # Nombre del bot admin
+BOT_USERNAME_ADMIN = "@ARecargasRBot"  # Nombre del bot admin
 
 # Configurar logging
 logging.basicConfig(
