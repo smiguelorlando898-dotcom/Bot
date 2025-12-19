@@ -1782,63 +1782,25 @@ async def button_handler_admin(update: Update, context: CallbackContext) -> None
         logger.error(f"Error en button_handler_admin: {e}")
         await query.answer("❌ Ocurrió un error. Por favor, intenta nuevamente.", show_alert=True)
 
-# ==================== INICIALIZACIÓN DE BOTS (VERSIÓN CORREGIDA) ====================
+# ==================== EJECUCIÓN PRINCIPAL (VERSIÓN FINAL CORREGIDA) ====================
 def run_bots():
-    """Función principal corregida para ejecutar ambos bots en Render"""
+    """Versión final corregida para Render"""
     import asyncio
+    import sys
+    import time
     
     # Inicializar base de datos
     init_database()
     
-    async def main_async():
-        """Función asíncrona principal"""
-        print("""
+    print("""
     ============================================
     🚀 SISTEMA DE RECARGAS RÁPIDAS - INICIANDO
     ============================================
-        """)
-        
-        # Configurar aplicación cliente
-        cliente_app_local = Application.builder().token(TOKEN_CLIENTE).build()
-        
-        # Configurar handlers del cliente
-        cliente_app_local.add_handler(CommandHandler("start", start))
-        cliente_app_local.add_handler(CallbackQueryHandler(button_handler_cliente))
-        cliente_app_local.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, recibir_numero))
-        cliente_app_local.add_handler(MessageHandler(filters.PHOTO, recibir_captura_pago))
-        
-        global cliente_app
-        cliente_app = cliente_app_local
-        
-        print("🤖 Bot CLIENTE configurado")
-        
-        # Configurar aplicación admin
-        admin_app_local = Application.builder().token(TOKEN_ADMIN).build()
-        
-        # Configurar handlers del admin
-        admin_app_local.add_handler(CommandHandler("admin", admin))
-        admin_app_local.add_handler(CommandHandler("fondosno", fondos_no))
-        admin_app_local.add_handler(CommandHandler("fondosyes", fondos_yes))
-        admin_app_local.add_handler(CallbackQueryHandler(button_handler_admin))
-        admin_app_local.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, recibir_nuevo_precio_admin))
-        
-        # Configurar JobQueue (solo si está disponible, con manejo de errores)
-        try:
-            if hasattr(admin_app_local, 'job_queue') and admin_app_local.job_queue is not None:
-                admin_app_local.job_queue.run_repeating(monitorear_nuevas_solicitudes, interval=30, first=10)
-                print("✅ JobQueue configurado para admin")
-        except Exception as e:
-            print(f"⚠️ JobQueue no disponible: {e}")
-            print("⚠️ Las notificaciones serán inmediatas en lugar de periódicas")
-        
-        global admin_app
-        admin_app = admin_app_local
-        
-        print("🛠️ Bot ADMIN configurado")
-        
-        # Mostrar información del sistema
-        stats = get_estadisticas()
-        print(f"""
+    """)
+    
+    # Mostrar información del sistema ANTES de iniciar los bots
+    stats = get_estadisticas()
+    print(f"""
     ============================================
     📊 INFORMACIÓN DEL SISTEMA
     ============================================
@@ -1850,108 +1812,13 @@ def run_bots():
     📨 Pedidos totales: {stats['total_pedidos']}
     🔧 Estado del servicio: {'ACTIVO' if get_service_status() == 'yes' else 'PAUSADO'}
     ============================================
-        """)
-        
-        # Configurar parámetros para polling en Render
-        polling_kwargs = {
-            'allowed_updates': ['message', 'callback_query'],
-            'drop_pending_updates': True,
-            'close_loop': False  # Importante para Render
-        }
-        
-        print("🔄 Iniciando bots con asyncio.gather...")
-        
-        # Ejecutar ambos bots simultáneamente
-        await asyncio.gather(
-            cliente_app_local.run_polling(**polling_kwargs),
-            admin_app_local.run_polling(**polling_kwargs)
-        )
-    
-    # Ejecutar en el event loop principal
-    asyncio.run(main_async())
-
-# ==================== INICIALIZACIÓN ALTERNATIVA (WEBHOOK) ====================
-def run_bots_webhook():
-    """Versión alternativa usando webhooks (recomendado para producción)"""
-    from telegram.ext import ApplicationBuilder
-    import os
-    
-    # Inicializar base de datos
-    init_database()
-    
-    # Obtener variables de entorno de Render
-    RENDER_EXTERNAL_URL = os.environ.get('RENDER_EXTERNAL_URL', 'https://recargasr.onrender.com')
-    PORT = int(os.environ.get('PORT', 10000))
-    
-    async def setup_webhooks():
-        """Configurar webhooks para ambos bots"""
-        
-        # Bot cliente
-        cliente_app_web = ApplicationBuilder().token(TOKEN_CLIENTE).build()
-        cliente_app_web.add_handler(CommandHandler("start", start))
-        cliente_app_web.add_handler(CallbackQueryHandler(button_handler_cliente))
-        cliente_app_web.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, recibir_numero))
-        cliente_app_web.add_handler(MessageHandler(filters.PHOTO, recibir_captura_pago))
-        
-        global cliente_app
-        cliente_app = cliente_app_web
-        
-        # Bot admin
-        admin_app_web = ApplicationBuilder().token(TOKEN_ADMIN).build()
-        admin_app_web.add_handler(CommandHandler("admin", admin))
-        admin_app_web.add_handler(CommandHandler("fondosno", fondos_no))
-        admin_app_web.add_handler(CommandHandler("fondosyes", fondos_yes))
-        admin_app_web.add_handler(CallbackQueryHandler(button_handler_admin))
-        admin_app_web.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, recibir_nuevo_precio_admin))
-        
-        global admin_app
-        admin_app = admin_app_web
-        
-        if RENDER_EXTERNAL_URL:
-            # Configurar webhooks
-            await cliente_app_web.initialize()
-            await admin_app_web.initialize()
-            
-            # Configurar webhooks
-            await cliente_app_web.bot.setWebhook(f"{RENDER_EXTERNAL_URL}/webhook/{TOKEN_CLIENTE}")
-            await admin_app_web.bot.setWebhook(f"{RENDER_EXTERNAL_URL}/webhook/{TOKEN_ADMIN}")
-            
-            print(f"✅ Webhooks configurados:")
-            print(f"   Cliente: {RENDER_EXTERNAL_URL}/webhook/{TOKEN_CLIENTE}")
-            print(f"   Admin: {RENDER_EXTERNAL_URL}/webhook/{TOKEN_ADMIN}")
-            
-            # Mantener la aplicación corriendo
-            print("✅ Bots configurados en modo webhook")
-            print("⚠️ Necesitas configurar el servidor web para manejar las rutas /webhook/")
-            
-        else:
-            print("⚠️ No se encontró RENDER_EXTERNAL_URL, usando polling")
-            # Usar polling si no hay URL
-            await asyncio.gather(
-                cliente_app_web.run_polling(allowed_updates=['message', 'callback_query'], drop_pending_updates=True),
-                admin_app_web.run_polling(allowed_updates=['message', 'callback_query'], drop_pending_updates=True)
-            )
-    
-    # Ejecutar
-    asyncio.run(setup_webhooks())
-
-# ==================== EJECUCIÓN PRINCIPAL (VERSIÓN SIMPLE) ====================
-def run_bots():
-    """Versión simplificada y corregida para Render"""
-    import asyncio
-    import sys
-    
-    # Inicializar base de datos
-    init_database()
-    
-    print("""
-    ============================================
-    🚀 SISTEMA DE RECARGAS RÁPIDAS - INICIANDO
-    ============================================
     """)
     
     async def run_cliente():
         """Ejecutar bot cliente"""
+        from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters
+        
+        print("🤖 Iniciando Bot CLIENTE...")
         app = Application.builder().token(TOKEN_CLIENTE).build()
         
         # Configurar handlers del cliente
@@ -1963,18 +1830,25 @@ def run_bots():
         global cliente_app
         cliente_app = app
         
-        print("🤖 Bot CLIENTE iniciado")
-        await app.run_polling(
-            allowed_updates=['message', 'callback_query'],
-            drop_pending_updates=True,
-            close_loop=False
-        )
+        print("✅ Bot CLIENTE configurado correctamente")
+        
+        # Configurar parámetros para polling
+        polling_kwargs = {
+            'allowed_updates': ['message', 'callback_query'],
+            'drop_pending_updates': True,
+            'close_loop': False
+        }
+        
+        await app.run_polling(**polling_kwargs)
     
     async def run_admin():
         """Ejecutar bot admin"""
-        # Pequeña pausa para evitar conflictos
-        await asyncio.sleep(2)
+        from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters
         
+        # Pequeña pausa para evitar conflictos
+        await asyncio.sleep(3)
+        
+        print("🛠️ Iniciando Bot ADMIN...")
         app = Application.builder().token(TOKEN_ADMIN).build()
         
         # Configurar handlers del admin
@@ -1995,15 +1869,21 @@ def run_bots():
         global admin_app
         admin_app = app
         
-        print("🛠️ Bot ADMIN iniciado")
-        await app.run_polling(
-            allowed_updates=['message', 'callback_query'],
-            drop_pending_updates=True,
-            close_loop=False
-        )
+        print("✅ Bot ADMIN configurado correctamente")
+        
+        # Configurar parámetros para polling
+        polling_kwargs = {
+            'allowed_updates': ['message', 'callback_query'],
+            'drop_pending_updates': True,
+            'close_loop': False
+        }
+        
+        await app.run_polling(**polling_kwargs)
     
     async def main():
         """Función principal asíncrona"""
+        print("🔄 Iniciando ambos bots...")
+        
         # Ejecutar ambos bots concurrentemente
         await asyncio.gather(
             run_cliente(),
@@ -2016,19 +1896,32 @@ def run_bots():
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
     
     try:
-        # Esta es la forma CORRECTA para Python 3.13 en Render
+        # Forma CORRECTA para Python 3.13 en Render
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
+        
+        print("🎯 Sistema listo. Presiona CTRL+C para detener.")
+        print("=" * 50)
+        
         loop.run_until_complete(main())
+        
     except KeyboardInterrupt:
         print("\n🛑 Sistema detenido por el usuario")
+        print("👋 Hasta pronto!")
+        
     except Exception as e:
-        print(f"\n❌ Error: {e}")
-        print("🔄 Reiniciando en 10 segundos...")
-        import time
-        time.sleep(10)
-        # Intentar reiniciar
-        run_bots()
+        print(f"\n❌ Error crítico: {type(e).__name__}: {e}")
+        print("🔄 Intentando reiniciar en 10 segundos...")
+        
+        try:
+            time.sleep(10)
+            print("🔄 Reiniciando sistema...")
+            # Intentar reiniciar
+            run_bots()
+        except Exception as restart_error:
+            print(f"❌ Error al reiniciar: {restart_error}")
+            print("💥 Sistema detenido. Verifica los logs.")
 
+# ==================== EJECUCIÓN ====================
 if __name__ == '__main__':
     run_bots()
