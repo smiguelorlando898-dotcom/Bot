@@ -12,7 +12,7 @@ import time
 
 # ==================== CONFIGURACIÓN ====================
 # ⚠️ REEMPLAZAR CON TUS TOKENS REALES
-TOKEN_CLIENTE = "TU_TOKEN_DEL_BOT_CLIENTE_AQUÍ"  # Token de @RecargasRBot
+TOKEN_CLIENTE = "8120597277:AAFsKTgowtm_rApAotAL0L-lYhyQEvJ1m4g"  # Token de @RecargasRBot
 TOKEN_ADMIN = "TU_TOKEN_DEL_BOT_ADMIN_AQUÍ"      # Token de @AdminRecargasRBot
 
 # ⚠️ REEMPLAZAR CON TU INFORMACIÓN REAL
