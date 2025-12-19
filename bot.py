@@ -1880,7 +1880,7 @@ def run_bots_webhook():
     init_database()
     
     # Obtener variables de entorno de Render
-    RENDER_EXTERNAL_URL = os.environ.get('RENDER_EXTERNAL_URL', '')
+    RENDER_EXTERNAL_URL = os.environ.get('RENDER_EXTERNAL_URL', 'https://recargasr.onrender.com')
     PORT = int(os.environ.get('PORT', 10000))
     
     async def setup_webhooks():
