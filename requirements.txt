@@ -1,4 +1,6 @@
-flask
 python-telegram-bot
-apscheduler
 yt-dlp
+python-dotenv
+requests
+colorlog
+tqdm
