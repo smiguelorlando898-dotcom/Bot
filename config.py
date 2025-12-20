@@ -10,7 +10,7 @@ TOKEN = os.getenv("TOKEN", "8530361444:AAFZ-yZIFzDC0CVUvX-W14kTZGVKFITGBCE")
 
 # Tu user_id como administrador (OBLIGATORIO)
 # Para obtener tu user_id: envía /start a @userinfobot
-ADMIN_ID = int(os.getenv("ADMIN_ID", @landitho9))  # Reemplaza con tu ID real
+ADMIN_ID = int(os.getenv("ADMIN_ID", 8282703640))  # Reemplaza con tu ID real
 
 # Configuración de descargas
 DOWNLOAD_PATH = "downloads"
