@@ -1259,12 +1259,20 @@ def main():
     print("=" * 50)
     print("🤖 BOT DESCARGADOR DE VIDEOS - VERSIÓN MEJORADA")
     print("=" * 50)
-    
-    # Verificar configuración
-    if TOKEN == "8530361444:AAFZ-yZIFzDC0CVUvX-W14kTZGVKFITGBCE":
-        print("❌ ERROR: Debes configurar el TOKEN en config.py")
-        print("   Obtén uno de @BotFather en Telegram")
+
+    # VERIFICACIÓN CORREGIDA - Solo formato básico
+    if not TOKEN or ":" not in TOKEN or len(TOKEN) < 30:
+        print("❌ ERROR: Token inválido o no configurado")
+        print("   Formato esperado: '1234567890:ABCdefGhIJKlmNoPQRsTUVwxyZ'")
+        print("   Usa variable de entorno o edita config.py")
         return
+    
+    # Mostrar solo parte del token por seguridad
+    partes_token = TOKEN.split(":")
+    if len(partes_token) >= 2:
+        print(f"✅ Token configurado: {partes_token[0]}:...{partes_token[1][-6:]}")
+    else:
+        print(f"✅ Token configurado (longitud: {len(TOKEN)})")
     
     print(f"📁 Carpeta de descargas: {DOWNLOAD_PATH}")
     print(f"📏 Tamaño máximo: {MAX_FILE_SIZE/1024/1024:.0f}MB")
@@ -1273,22 +1281,19 @@ def main():
     print("=" * 50)
     print("🟢 Iniciando bot... (Ctrl+C para detener)")
     print("=" * 50)
-    
+
     try:
         # Limpiar cache expirado al inicio
         if CACHE_ENABLED:
             video_cache.clear_expired()
-        
+
         # Configurar y ejecutar bot
         application = configurar_bot()
         application.run_polling(drop_pending_updates=True)
-    
+
     except KeyboardInterrupt:
         print("\n⏹️ Bot detenido por el usuario")
-    
+
     except Exception as e:
         logger.error(f"Error fatal: {e}")
         print(f"❌ Error fatal: {e}")
-
-if __name__ == "__main__":
-    main()
