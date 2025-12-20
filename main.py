@@ -27,18 +27,29 @@ from telegram.ext import (
     ContextTypes
 )
 
-import config
-
 # ==================== CONFIGURACIÓN ====================
-TOKEN = config.TOKEN
-DOWNLOAD_PATH = config.DOWNLOAD_PATH
-MAX_FILE_SIZE = config.MAX_FILE_SIZE
-CACHE_ENABLED = config.CACHE_ENABLED
-CACHE_TTL_MINUTES = config.CACHE_TTL_MINUTES
-CACHE_DIR = config.CACHE_DIR
-GENERATE_THUMBNAILS = config.GENERATE_THUMBNAILS
-MAX_RETRIES = config.MAX_RETRIES
-RETRY_DELAY = config.RETRY_DELAY
+# Usar variable de entorno o valor por defecto
+TOKEN = os.getenv("TOKEN", "8530361444:AAFZ-yZIFzDC0CVUvX-W14kTZGVKFITGBCE")
+
+# Configuración de descargas
+DOWNLOAD_PATH = "downloads"
+MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB límite de Telegram
+
+# Cache settings
+CACHE_ENABLED = True
+CACHE_TTL_MINUTES = 60  # 1 hora
+CACHE_DIR = "cache"
+
+# Thumbnail settings
+GENERATE_THUMBNAILS = True
+THUMBNAIL_WIDTH = 320
+
+# Retry settings
+MAX_RETRIES = 3
+RETRY_DELAY = 2  # segundos
+
+# Progress update interval (seconds)
+PROGRESS_UPDATE_INTERVAL = 3
 
 # Crear directorios necesarios
 Path(DOWNLOAD_PATH).mkdir(exist_ok=True)
