@@ -1,24 +1,12 @@
-# config.py
+# config.py - CONFIGURACIÓN SIMPLIFICADA
 import os
-from dotenv import load_dotenv
 
-# Cargar variables de entorno
-load_dotenv()
+# Token del bot (obtener de @BotFather)
+TOKEN = "8530361444:AAFZ-yZIFzDC0CVUvX-W14kTZGVKFITGBCE"
 
-# Token del bot (OBLIGATORIO - obtener de @BotFather)
-TOKEN = os.getenv("TOKEN", "8530361444:AAFZ-yZIFzDC0CVUvX-W14kTZGVKFITGBCE")
-
-# Tu user_id como administrador (OBLIGATORIO)
-# Para obtener tu user_id: envía /start a @userinfobot
-ADMIN_ID = int(os.getenv("ADMIN_ID", 8282703640))  # Reemplaza con tu ID real
-
-# Configuración de descargas
+# Configuración simplificada
 DOWNLOAD_PATH = "downloads"
-MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB (límite de Telegram Bot API)
+MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
 
-# Configuración de logs
-ENABLE_LOGS = True
-LOG_FILE = "bot_logs.log"
-
-# Tiempo de espera entre actualizaciones de progreso (segundos)
-UPDATE_INTERVAL = 3
+# SIN SISTEMA DE PERMISOS - TODOS PUEDEN USARLO
+# SIN ADMIN_ID - NO SE NECESITA
