@@ -600,7 +600,7 @@ async def handle_url_message(update: Update, context: ContextTypes.DEFAULT_TYPE)
     # Mostrar información y menú
     title = video_info.get('title', 'Sin título')
     duration = video_info.get('duration', 0)
-    duration_str = f"{duration // 60}:{duration % 60:02d}" if duration > 0 else "Desconocida"
+    duration_str = f"{int(duration) // 60}:{int(duration) % 60:02d}" if duration > 0 else "Desconocida"
     uploader = video_info.get('uploader', 'Desconocido')
     
     info_text = (
