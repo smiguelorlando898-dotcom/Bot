@@ -7,7 +7,7 @@ import os
 
 # Configuración
 TOKEN = "8530361444:AAFZ-yZIFzDC0CVUvX-W14kTZGVKFITGBCE"
-ADMIN_ID = 123456789  # ⚠️ CAMBIA ESTO POR TU ID REAL DE TELEGRAM
+ADMIN_ID = 1055118211  # ⚠️ CAMBIA ESTO POR TU ID REAL DE TELEGRAM
 PAYMENT_NUMBER = "50321300"
 
 # Configurar logging
@@ -231,6 +231,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(
             f'¡Hola {user.first_name}! 👋\n'
             'Bienvenido a RECARGAS RÁPIDAS.\n'
+            'Convierte tu saldo móvil en planes de ETECSA al instante.\n\n'
             'Selecciona "Ver planes" para comenzar.',
             reply_markup=reply_markup
         )
@@ -318,24 +319,25 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.edit_message_text("📭 No hay solicitudes pendientes.", reply_markup=reply_markup)
             return
         
-        message_text = "📋 SOLICITUDES PENDIENTES:\n\n"
+        message_text = "📋 **SOLICITUDES PENDIENTES:**\n\n"
         for req in requests:
             req_id, user_id, plan_type, plan_name, price, phone, req_date, username, first_name = req
             message_text += (
-                f"🆔 ID: {req_id}\n"
-                f"👤 Usuario: {first_name} (@{username if username else 'Sin username'})\n"
-                f"📞 Teléfono: {phone}\n"
-                f"📦 Plan: {plan_name}\n"
-                f"💰 Precio: {price:.2f} CUP\n"
-                f"📅 Fecha: {req_date}\n"
+                f"🆔 **ID:** {req_id}\n"
+                f"👤 **Usuario:** {first_name} (@{username if username else 'Sin username'})\n"
+                f"📞 **Teléfono:** {phone}\n"
+                f"📦 **Plan:** {plan_name}\n"
+                f"💰 **Precio:** {price:.2f} CUP\n"
+                f"📅 **Fecha:** {req_date}\n"
                 f"────────────────────\n"
             )
         
         keyboard = [[InlineKeyboardButton("« Volver al menú", callback_data='admin_back')]]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
-        await query.edit_message_text(message_text, reply_markup=reply_markup)
+        await query.edit_message_text(message_text, reply_markup=reply_markup, parse_mode='Markdown')
         
+        # Enviar botones de acción para CADA solicitud (mensajes separados)
         for req in requests:
             req_id = req[0]
             keyboard = [
@@ -346,10 +348,12 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
             
+            # Enviar como mensaje NUEVO (no editar)
             await context.bot.send_message(
                 chat_id=ADMIN_ID,
-                text=f"Solicitud #{req_id} - ¿Qué acción deseas tomar?",
-                reply_markup=reply_markup
+                text=f"**Solicitud #{req_id}** - ¿Qué acción deseas tomar?",
+                reply_markup=reply_markup,
+                parse_mode='Markdown'
             )
     
     elif data == 'admin_stats':
@@ -394,6 +398,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_text(message, reply_markup=reply_markup, parse_mode='Markdown')
     
     elif data == 'admin_back':
+        # Volver al menú principal del admin
         keyboard = [
             [InlineKeyboardButton("📋 Ver solicitudes pendientes", callback_data='admin_view_requests')],
             [InlineKeyboardButton("📊 Estadísticas", callback_data='admin_stats')],
@@ -401,66 +406,30 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         await query.edit_message_text(
-            '👑 ¡Bienvenido Administrador!\n'
+            '👑 **Menú de Administrador**\n'
             'Selecciona una opción:',
-            reply_markup=reply_markup
-        )
-    
-    elif data.startswith('confirm_request_'):
-        request_id = int(data.replace('confirm_request_', ''))
-        user_id = update_request_status(request_id, 'confirmed')
-        
-        if user_id:
-            try:
-                await context.bot.send_message(
-                    chat_id=user_id,
-                    text="✅ ¡Tu solicitud ha sido PROCESADA!\n"
-                         "Tu plan ha sido activado exitosamente.\n\n"
-                         "¡Gracias por usar RECARGAS RÁPIDAS! 🎉"
-                )
-            except Exception as e:
-                logger.error(f"Error notifying user: {e}")
-        
-        await query.edit_message_text(
-            f"✅ Solicitud #{request_id} procesada exitosamente.\n"
-            f"El usuario ha sido notificado."
-        )
-    
-    elif data.startswith('cancel_request_'):
-        request_id = int(data.replace('cancel_request_', ''))
-        user_id = update_request_status(request_id, 'cancelled')
-        
-        if user_id:
-            try:
-                await context.bot.send_message(
-                    chat_id=user_id,
-                    text="❌ Tu solicitud ha sido CANCELADA por el administrador.\n"
-                         "Por favor, contacta con soporte si necesitas ayuda."
-                )
-            except Exception as e:
-                logger.error(f"Error notifying user: {e}")
-        
-        await query.edit_message_text(
-            f"❌ Solicitud #{request_id} cancelada.\n"
-            f"El usuario ha sido notificado."
+            reply_markup=reply_markup,
+            parse_mode='Markdown'
         )
     
     elif data.startswith('admin_accept_'):
         request_id = int(data.replace('admin_accept_', ''))
         
+        # ✅ CORREGIDO: Solo confirmación para admin, sin instrucciones
         await query.edit_message_text(
-            f"📋 Solicitud #{request_id} ACEPTADA.\n\n"
-            f"⚠️ Instrucciones para el usuario:\n"
-            f"1. Transfiere al: {PAYMENT_NUMBER}\n"
-            f"2. Envía captura de pantalla\n"
-            f"3. Espera confirmación"
+            f"✅ **Solicitud #{request_id} ACEPTADA**\n\n"
+            f"📤 Se han enviado las instrucciones de pago al usuario.\n"
+            f"⏳ Espera a que envíe la captura de pantalla.",
+            parse_mode='Markdown'
         )
         
+        # Actualizar estado en BD
         conn = sqlite3.connect('bot_database.db')
         cursor = conn.cursor()
         cursor.execute("UPDATE requests SET status = 'waiting_payment' WHERE id = ?", (request_id,))
         conn.commit()
         
+        # Obtener datos para notificar al usuario
         cursor.execute("SELECT user_id, plan_name, price FROM requests WHERE id = ?", (request_id,))
         result = cursor.fetchone()
         conn.close()
@@ -468,19 +437,23 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if result:
             user_id, plan_name, price = result
             try:
+                # ✅ Instrucciones de pago SOLO para el usuario
                 await context.bot.send_message(
                     chat_id=user_id,
                     text=(
-                        f"✅ Tu solicitud ha sido ACEPTADA.\n\n"
-                        f"📦 Plan: {plan_name}\n"
-                        f"💰 Precio: {price:.2f} CUP\n\n"
+                        f"✅ **Tu solicitud #{request_id} ha sido ACEPTADA**\n\n"
+                        f"📦 **Plan:** {plan_name}\n"
+                        f"💰 **Precio:** {price:.2f} CUP\n\n"
                         f"📲 **INSTRUCCIONES DE PAGO:**\n"
-                        f"1. Transfiere al: {PAYMENT_NUMBER}\n"
-                        f"2. Monto: {price:.2f} CUP\n"
-                        f"3. Envía la captura de pantalla aquí\n"
-                        f"4. Te notificaremos cuando se active\n\n"
-                        f"⚠️ Asegúrate de que la captura sea CLARA y LEGIBLE."
-                    )
+                        f"1. Realiza **transferencia de saldo móvil** al número:\n"
+                        f"   `{PAYMENT_NUMBER}`\n"
+                        f"2. **Monto exacto:** {price:.2f} CUP\n"
+                        f"3. **Envía la captura de pantalla** de la transferencia a este chat\n"
+                        f"4. Tu plan será activado una vez verifiquemos el pago\n\n"
+                        f"⚠️ **Asegúrate de que la captura sea CLARA y LEGIBLE.**\n"
+                        f"⏳ **Tiempo de activación:** Hasta 12 horas"
+                    ),
+                    parse_mode='Markdown'
                 )
             except Exception as e:
                 logger.error(f"Error notifying user: {e}")
@@ -493,13 +466,61 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             try:
                 await context.bot.send_message(
                     chat_id=user_id,
-                    text="❌ Tu solicitud ha sido CANCELADA por el administrador.\n"
-                         "Por favor, contacta con soporte si necesitas ayuda."
+                    text="❌ **Tu solicitud ha sido CANCELADA por el administrador.**\n"
+                         "Por favor, contacta con soporte si necesitas ayuda.",
+                    parse_mode='Markdown'
                 )
             except Exception as e:
                 logger.error(f"Error notifying user: {e}")
         
-        await query.edit_message_text(f"❌ Solicitud #{request_id} cancelada.")
+        await query.edit_message_text(
+            f"❌ **Solicitud #{request_id} cancelada.**\n"
+            f"El usuario ha sido notificado.",
+            parse_mode='Markdown'
+        )
+    
+    elif data.startswith('confirm_request_'):
+        request_id = int(data.replace('confirm_request_', ''))
+        user_id = update_request_status(request_id, 'confirmed')
+        
+        if user_id:
+            try:
+                await context.bot.send_message(
+                    chat_id=user_id,
+                    text="✅ **¡Tu solicitud ha sido PROCESADA!**\n\n"
+                         "Tu plan ha sido activado exitosamente.\n\n"
+                         "¡Gracias por usar RECARGAS RÁPIDAS! 🎉",
+                    parse_mode='Markdown'
+                )
+            except Exception as e:
+                logger.error(f"Error notifying user: {e}")
+        
+        await query.edit_message_text(
+            f"✅ **Solicitud #{request_id} procesada exitosamente.**\n"
+            f"El usuario ha sido notificado.",
+            parse_mode='Markdown'
+        )
+    
+    elif data.startswith('cancel_request_'):
+        request_id = int(data.replace('cancel_request_', ''))
+        user_id = update_request_status(request_id, 'cancelled')
+        
+        if user_id:
+            try:
+                await context.bot.send_message(
+                    chat_id=user_id,
+                    text="❌ **Tu solicitud ha sido CANCELADA por el administrador.**\n"
+                         "Por favor, contacta con soporte si necesitas ayuda.",
+                    parse_mode='Markdown'
+                )
+            except Exception as e:
+                logger.error(f"Error notifying user: {e}")
+        
+        await query.edit_message_text(
+            f"❌ **Solicitud #{request_id} cancelada.**\n"
+            f"El usuario ha sido notificado.",
+            parse_mode='Markdown'
+        )
 
 # Manejar mensajes
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -520,15 +541,17 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
             
             await update.message.reply_text(
-                f"✅ Solicitud enviada exitosamente.\n"
-                f"🆔 ID: #{request_id}\n"
-                f"📞 Teléfono: {phone_number}\n"
-                f"📦 Plan: {plan['name']}\n"
-                f"💰 Precio: {plan['price']:.2f} CUP\n\n"
-                f"⏳ Tu solicitud está siendo procesada."
+                f"✅ **Solicitud enviada exitosamente.**\n\n"
+                f"🆔 **ID de solicitud:** #{request_id}\n"
+                f"📞 **Teléfono:** {phone_number}\n"
+                f"📦 **Plan:** {plan['name']}\n"
+                f"💰 **Precio:** {plan['price']:.2f} CUP\n\n"
+                f"⏳ **Tu solicitud está siendo procesada.**\n"
+                f"Te notificaremos cuando sea revisada por el administrador.",
+                parse_mode='Markdown'
             )
             
-            # NOTIFICACIÓN MEJORADA AL ADMIN
+            # ✅ Notificación al admin (SOLO admin recibe esto)
             user = update.effective_user
             keyboard = [
                 [
@@ -558,13 +581,16 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             del context.user_data['selected_plan']
         else:
             await update.message.reply_text(
-                "❌ Número inválido. Envía un número de 8 dígitos.\n"
-                "Ejemplo: 51234567"
+                "❌ **Número de teléfono inválido.**\n"
+                "Por favor, envía un número válido de 8 dígitos.\n"
+                "**Ejemplo:** 51234567",
+                parse_mode='Markdown'
             )
     else:
         await update.message.reply_text(
             "Por favor, usa los botones del menú para navegar.\n"
-            "Escribe /start para ver el menú principal."
+            "Escribe **/start** para ver el menú principal.",
+            parse_mode='Markdown'
         )
 
 # Manejar fotos
@@ -594,10 +620,11 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         update_request_status(request_id, 'payment_received', screenshot_path)
         
         await update.message.reply_text(
-            "✅ Captura de pantalla recibida.\n\n"
-            "📋 Tu pago está siendo verificado.\n"
+            "✅ **Captura de pantalla recibida.**\n\n"
+            "📋 **Tu pago está siendo verificado.**\n"
             "Te notificaremos cuando tu plan sea activado.\n\n"
-            "⏳ Por favor, espera la confirmación."
+            "⏳ Por favor, espera la confirmación.",
+            parse_mode='Markdown'
         )
         
         user = update.effective_user
@@ -608,6 +635,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
+        # ✅ Notificación al admin (SOLO admin recibe esto)
         await context.bot.send_message(
             chat_id=ADMIN_ID,
             text=(
@@ -624,15 +652,17 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
             parse_mode='Markdown'
         )
         
+        # Enviar la foto también al admin
         await context.bot.send_photo(
             chat_id=ADMIN_ID,
             photo=file_id,
-            caption=f"Captura de pago - Solicitud #{request_id}"
+            caption=f"📸 Captura de pago - Solicitud #{request_id}"
         )
     else:
         await update.message.reply_text(
-            "📌 No tienes solicitudes pendientes de pago.\n"
-            "Primero selecciona un plan y espera la aceptación."
+            "📌 **No tienes solicitudes pendientes de pago.**\n"
+            "Primero selecciona un plan y espera la aceptación del administrador.",
+            parse_mode='Markdown'
         )
     
     conn.close()
@@ -657,7 +687,7 @@ def main():
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
     
-    print("🤖 Bot iniciado con mejoras...")
+    print("🤖 Bot iniciado con todas las correcciones...")
     application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == '__main__':
