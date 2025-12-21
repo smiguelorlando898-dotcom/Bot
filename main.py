@@ -1255,45 +1255,52 @@ def configurar_bot():
 
 # ==================== INICIAR BOT ====================
 def main():
-    """Función principal para iniciar el bot"""
-    print("=" * 50)
-    print("🤖 BOT DESCARGADOR DE VIDEOS - VERSIÓN MEJORADA")
-    print("=" * 50)
-
-    # VERIFICACIÓN CORREGIDA - Solo formato básico
-    if not TOKEN or ":" not in TOKEN or len(TOKEN) < 30:
-        print("❌ ERROR: Token inválido o no configurado")
-        print("   Formato esperado: '1234567890:ABCdefGhIJKlmNoPQRsTUVwxyZ'")
-        print("   Usa variable de entorno o edita config.py")
-        return
-    
-    # Mostrar solo parte del token por seguridad
-    partes_token = TOKEN.split(":")
-    if len(partes_token) >= 2:
-        print(f"✅ Token configurado: {partes_token[0]}:...{partes_token[1][-6:]}")
-    else:
-        print(f"✅ Token configurado (longitud: {len(TOKEN)})")
-    
-    print(f"📁 Carpeta de descargas: {DOWNLOAD_PATH}")
-    print(f"📏 Tamaño máximo: {MAX_FILE_SIZE/1024/1024:.0f}MB")
-    print(f"🔧 Cache: {'HABILITADO' if CACHE_ENABLED else 'DESHABILITADO'}")
-    print(f"🖼️ Thumbnails: {'HABILITADOS' if GENERATE_THUMBNAILS else 'DESHABILITADOS'}")
-    print("=" * 50)
-    print("🟢 Iniciando bot... (Ctrl+C para detener)")
-    print("=" * 50)
-
+    """Función principal para iniciar el bot - VERSIÓN DEBUG"""
     try:
-        # Limpiar cache expirado al inicio
+        print("=" * 50)
+        print("🤖 INICIANDO BOT - MODO DEBUG")
+        print("=" * 50)
+        
+        # Paso 1: Verificar imports
+        print("✅ Paso 1: Imports correctos")
+        
+        # Paso 2: Verificar config
+        print(f"✅ Paso 2: Token configurado (len={len(TOKEN)})")
+        print(f"   Formato: {'VÁLIDO' if ':' in TOKEN else 'INVÁLIDO'}")
+        
+        # Paso 3: Crear directorios
+        print("✅ Paso 3: Creando directorios...")
+        Path(DOWNLOAD_PATH).mkdir(exist_ok=True)
+        Path(CACHE_DIR).mkdir(exist_ok=True)
+        
+        # Paso 4: Limpiar cache
         if CACHE_ENABLED:
+            print("✅ Paso 4: Limpiando cache...")
             video_cache.clear_expired()
-
-        # Configurar y ejecutar bot
+        
+        # Paso 5: Configurar bot
+        print("✅ Paso 5: Configurando aplicación...")
         application = configurar_bot()
+        
+        # Paso 6: Iniciar bot
+        print("=" * 50)
+        print("🟢 INICIANDO POLLING...")
+        print("=" * 50)
+        
         application.run_polling(drop_pending_updates=True)
-
-    except KeyboardInterrupt:
-        print("\n⏹️ Bot detenido por el usuario")
-
+        
     except Exception as e:
-        logger.error(f"Error fatal: {e}")
-        print(f"❌ Error fatal: {e}")
+        print("=" * 50)
+        print("❌ ERROR FATAL DETECTADO")
+        print("=" * 50)
+        print(f"Tipo de error: {type(e).__name__}")
+        print(f"Mensaje: {str(e)}")
+        print("=" * 50)
+        
+        # Mostrar traceback completo
+        import traceback
+        traceback.print_exc()
+        
+        # Esperar antes de terminar (para ver logs)
+        import time
+        time.sleep(5)
