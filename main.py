@@ -1411,7 +1411,6 @@ def main():
     
     application.run_polling(allowed_updates=Update.ALL_TYPES)
 
-if __name__ == '__main__':
     def main():
     """Función principal con Webhook para Render"""
     print("🤖 Iniciando bot con sistema de referidos y créditos...")
