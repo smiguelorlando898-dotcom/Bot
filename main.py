@@ -5,7 +5,6 @@ from datetime import datetime, timedelta
 import sqlite3
 import os
 import hashlib
-import traceback
 
 # ==================== CONFIGURACIÓN ====================
 TOKEN = "8530361444:AAFZ-yZIFzDC0CVUvX-W14kTZGVKFITGBCE"
@@ -204,18 +203,6 @@ def apply_referral_bonus(referred_user_id):
             ''', (referred_user_id, referrer_id))
             
             conn.commit()
-            
-            # Notificar al referidor
-            try:
-                from main import application
-                bot = application.bot
-                bot.send_message(
-                    chat_id=referrer_id,
-                    text=f"🎉 ¡Felicidades! Has recibido 1 CUP por referir a un amigo.\n"
-                         f"Tu crédito ahora es: {get_user_credit(referrer_id):.2f} CUP"
-                )
-            except:
-                pass
     
     conn.close()
 
@@ -1367,51 +1354,9 @@ async def user_back_to_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode='Markdown'
     )
 
-# ==================== MAIN ====================
-def main():
-    """Función principal"""
-    print("🤖 Iniciando bot de recargas con sistema de referidos...")
-    
-    # Inicializar base de datos
-    init_db()
-    
-    # Crear aplicación
-    application = Application.builder().token(TOKEN).build()
-    
-    # Handlers de comandos
-    application.add_handler(CommandHandler("start", start))
-    
-    # Handlers de botones para usuarios
-    application.add_handler(CallbackQueryHandler(user_profile, pattern='^user_profile$'))
-    application.add_handler(CallbackQueryHandler(user_invite, pattern='^user_invite$'))
-    application.add_handler(CallbackQueryHandler(user_my_orders, pattern='^user_my_orders$'))
-    application.add_handler(CallbackQueryHandler(user_help, pattern='^user_help$'))
-    application.add_handler(CallbackQueryHandler(view_plans, pattern='^view_plans$'))
-    application.add_handler(CallbackQueryHandler(select_plan_type, pattern='^plan_type_'))
-    application.add_handler(CallbackQueryHandler(handle_plan_selection, pattern='^(select_plan_|use_partial_)'))
-    application.add_handler(CallbackQueryHandler(user_back_to_menu, pattern='^user_back_to_menu$'))
-    
-    # Handlers de botones para admin
-    application.add_handler(CallbackQueryHandler(admin_view_requests, pattern='^admin_view_requests$'))
-    application.add_handler(CallbackQueryHandler(admin_stats, pattern='^admin_stats$'))
-    application.add_handler(CallbackQueryHandler(admin_accept, pattern='^admin_accept_'))
-    application.add_handler(CallbackQueryHandler(admin_cancel, pattern='^admin_cancel_'))
-    application.add_handler(CallbackQueryHandler(confirm_request, pattern='^confirm_request_'))
-    application.add_handler(CallbackQueryHandler(cancel_request, pattern='^cancel_request_'))
-    application.add_handler(CallbackQueryHandler(admin_back, pattern='^admin_back$'))
-    
-    # Handlers de mensajes
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-    application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
-    
-    print("✅ Bot listo y funcionando!")
-    print(f"👑 Admins configurados: {ADMIN_IDS}")
-    print("💳 Sistema de referidos: ACTIVADO")
-    print("🎯 Créditos por referido: 1 CUP")
-    
-    application.run_polling(allowed_updates=Update.ALL_TYPES)
+# ==================== FUNCIÓN MAIN() CON WEBHOOK ====================
 
-    def main():
+def main():
     """Función principal con Webhook para Render"""
     print("🤖 Iniciando bot con sistema de referidos y créditos...")
     
@@ -1624,3 +1569,8 @@ def main():
         
         # Ejecutar en modo asíncrono
         asyncio.run(setup_polling())
+
+# ==================== PUNTO DE ENTRADA ====================
+
+if __name__ == '__main__':
+    main()
