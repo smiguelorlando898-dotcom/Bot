@@ -1412,4 +1412,216 @@ def main():
     application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == '__main__':
-    main()
+    def main():
+    """Función principal con Webhook para Render"""
+    print("🤖 Iniciando bot con sistema de referidos y créditos...")
+    
+    # Inicializar base de datos
+    init_db()
+    
+    # Crear aplicación
+    application = Application.builder().token(TOKEN).build()
+    
+    # ==================== CONFIGURAR HANDLERS ====================
+    
+    # Handlers de comandos
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(CommandHandler("cancel", handle_message))
+    
+    # Handlers de botones para usuarios
+    application.add_handler(CallbackQueryHandler(user_profile, pattern='^user_profile$'))
+    application.add_handler(CallbackQueryHandler(user_invite, pattern='^user_invite$'))
+    application.add_handler(CallbackQueryHandler(user_my_orders, pattern='^user_my_orders$'))
+    application.add_handler(CallbackQueryHandler(user_help, pattern='^user_help$'))
+    application.add_handler(CallbackQueryHandler(view_plans, pattern='^view_plans$'))
+    application.add_handler(CallbackQueryHandler(select_plan_type, pattern='^plan_type_'))
+    application.add_handler(CallbackQueryHandler(handle_plan_selection, pattern='^(select_plan_|use_partial_)'))
+    application.add_handler(CallbackQueryHandler(user_back_to_menu, pattern='^user_back_to_menu$'))
+    
+    # Handlers de botones para admin
+    application.add_handler(CallbackQueryHandler(admin_view_requests, pattern='^admin_view_requests$'))
+    application.add_handler(CallbackQueryHandler(admin_stats, pattern='^admin_stats$'))
+    application.add_handler(CallbackQueryHandler(admin_accept, pattern='^admin_accept_'))
+    application.add_handler(CallbackQueryHandler(admin_cancel, pattern='^admin_cancel_'))
+    application.add_handler(CallbackQueryHandler(confirm_request, pattern='^confirm_request_'))
+    application.add_handler(CallbackQueryHandler(cancel_request, pattern='^cancel_request_'))
+    application.add_handler(CallbackQueryHandler(admin_back, pattern='^admin_back$'))
+    
+    # Handlers de mensajes
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
+    
+    # ==================== MODO WEBHOOK (Render) ====================
+    
+    # Obtener URL de Render automáticamente
+    import os
+    render_external_url = os.getenv('RENDER_EXTERNAL_URL')
+    render_hostname = os.getenv('RENDER_EXTERNAL_HOSTNAME')
+    
+    # Si estamos en Render (tiene variable de entorno)
+    if render_external_url or render_hostname:
+        print("🌐 Detectado Render.com - Configurando Webhook...")
+        
+        # Usar la URL proporcionada por Render
+        if render_external_url:
+            webhook_url = f"{render_external_url}/{TOKEN}"
+        elif render_hostname:
+            webhook_url = f"https://{render_hostname}/{TOKEN}"
+        else:
+            print("❌ No se pudo determinar la URL de Render")
+            return
+        
+        print(f"✅ Webhook URL: {webhook_url}")
+        
+        # Importar para webhook
+        import asyncio
+        from telegram import Update
+        import uvicorn
+        from fastapi import FastAPI, Request, Response
+        import json
+        
+        # Crear aplicación FastAPI
+        app = FastAPI(title="Bot de Recargas")
+        
+        # Variable global para la aplicación de bot
+        global bot_application
+        bot_application = application
+        
+        @app.post(f"/{TOKEN}")
+        async def telegram_webhook(request: Request):
+            """Endpoint para recibir webhooks de Telegram"""
+            try:
+                # Leer datos del webhook
+                data = await request.json()
+                
+                # Convertir a objeto Update de Telegram
+                update = Update.de_json(data, bot_application.bot)
+                
+                # Procesar la actualización
+                await bot_application.process_update(update)
+                
+                return Response(status_code=200)
+            except Exception as e:
+                print(f"❌ Error procesando webhook: {e}")
+                return Response(status_code=500)
+        
+        @app.get("/")
+        async def root():
+            """Página principal - Health check para Render"""
+            return {
+                "status": "online",
+                "service": "Bot de Recargas ETECSA",
+                "mode": "webhook",
+                "features": ["referidos", "créditos", "planes ETECSA"],
+                "endpoints": {
+                    "webhook": f"POST /{TOKEN}",
+                    "health": "GET /health"
+                }
+            }
+        
+        @app.get("/health")
+        async def health_check():
+            """Endpoint de salud para Render"""
+            return {
+                "status": "healthy",
+                "bot": "running",
+                "timestamp": datetime.now().isoformat()
+            }
+        
+        @app.on_event("startup")
+        async def on_startup():
+            """Configurar webhook al iniciar la aplicación"""
+            print("🚀 Iniciando bot en modo Webhook...")
+            
+            try:
+                # Eliminar webhook anterior si existe
+                await application.bot.delete_webhook(drop_pending_updates=True)
+                print("✅ Webhooks anteriores eliminados")
+                
+                # Configurar nuevo webhook
+                await application.bot.set_webhook(
+                    url=webhook_url,
+                    max_connections=40,
+                    allowed_updates=["message", "callback_query"]
+                )
+                print(f"✅ Webhook configurado en: {webhook_url}")
+                
+                # Verificar información del bot
+                bot_info = await application.bot.get_me()
+                print(f"🤖 Bot: @{bot_info.username}")
+                print(f"💳 Sistema de referidos: ACTIVADO")
+                print(f"🎯 Créditos por referido: 1 CUP")
+                print(f"👑 Admins: {ADMIN_IDS}")
+                
+            except Exception as e:
+                print(f"❌ Error configurando webhook: {e}")
+                # Intentar modo polling como respaldo
+                print("🔄 Intentando modo polling como respaldo...")
+                asyncio.create_task(run_polling_backup())
+        
+        async def run_polling_backup():
+            """Modo de respaldo si falla webhook"""
+            try:
+                print("🔄 Iniciando modo polling...")
+                await application.initialize()
+                await application.start()
+                await application.updater.start_polling(
+                    allowed_updates=["message", "callback_query"]
+                )
+                
+                # Mantener el bot corriendo
+                while True:
+                    await asyncio.sleep(3600)
+                    
+            except Exception as e:
+                print(f"❌ Error en modo polling: {e}")
+        
+        # Configurar puerto para Render
+        port = int(os.getenv("PORT", 10000))
+        host = "0.0.0.0"
+        
+        print(f"🌍 Servidor iniciando en: {host}:{port}")
+        print(f"🔗 Webhook: {webhook_url}")
+        print("📞 Health check: /health")
+        
+        # Iniciar servidor FastAPI
+        uvicorn.run(
+            app,
+            host=host,
+            port=port,
+            log_level="info"
+        )
+        
+    else:
+        # ==================== MODO POLLING (Desarrollo Local) ====================
+        print("💻 Modo desarrollo local - Usando Polling...")
+        
+        # Eliminar webhook anterior si existe
+        import asyncio
+        
+        async def setup_polling():
+            try:
+                # Eliminar cualquier webhook previo
+                await application.bot.delete_webhook(drop_pending_updates=True)
+                print("✅ Webhooks anteriores eliminados")
+            except Exception as e:
+                print(f"⚠️ No se pudo eliminar webhook: {e}")
+            
+            # Esperar un momento
+            await asyncio.sleep(2)
+            
+            # Verificar información del bot
+            bot_info = await application.bot.get_me()
+            print(f"🤖 Bot: @{bot_info.username}")
+            print(f"👤 Nombre: {bot_info.first_name}")
+            
+            # Iniciar polling
+            print("🔄 Iniciando polling...")
+            await application.run_polling(
+                allowed_updates=Update.ALL_TYPES,
+                close_loop=False,
+                drop_pending_updates=True
+            )
+        
+        # Ejecutar en modo asíncrono
+        asyncio.run(setup_polling())
