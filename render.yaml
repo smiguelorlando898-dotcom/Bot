@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: windows-virtual
+    env: docker
+    plan: standard
+    autoDeploy: true
+    ports:
+      - port: 8080
+        protocol: http
+    disk:
+      name: persistent-storage
+      mountPath: /data
+      sizeGB: 10
