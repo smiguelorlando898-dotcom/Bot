@@ -1,29 +1,28 @@
-FROM ubuntu:22.04
+FROM ubuntu:20.04
 
-# Evitar prompts interactivos durante la instalación
 ENV DEBIAN_FRONTEND=noninteractive
-ARG TZ=America/Havana
-ENV TZ=${TZ}
+ENV TZ=Etc/UTC
 
-# Instalar dependencias básicas
+# Instala entorno gráfico, Wine y utilidades
 RUN apt-get update && apt-get install -y \
-    wget curl unzip xvfb x11vnc fluxbox \
-    python3 python3-pip git \
-    wine64 winbind \
-    tzdata \
+    xfce4 xfce4-goodies x11vnc xvfb wine supervisor git python3 python3-pip net-tools tzdata \
     && ln -fs /usr/share/zoneinfo/$TZ /etc/localtime \
-    && dpkg-reconfigure --frontend noninteractive tzdata \
-    && rm -rf /var/lib/apt/lists/*
+    && dpkg-reconfigure --frontend noninteractive tzdata
 
-# Instalar noVNC + websockify
-RUN git clone https://github.com/novnc/noVNC.git /opt/noVNC \
-    && git clone https://github.com/novnc/websockify /opt/noVNC/utils/websockify
+# Configura contraseña VNC
+RUN mkdir -p /root/.vnc && \
+    x11vnc -storepasswd 1234 /root/.vnc/passwd
 
-WORKDIR /opt/noVNC
-EXPOSE 8080
+# Instala noVNC y websockify
+RUN git clone https://github.com/novnc/noVNC.git /opt/noVNC && \
+    git clone https://github.com/novnc/websockify /opt/noVNC/utils/websockify && \
+    ln -s /opt/noVNC/vnc.html /opt/noVNC/index.html
 
-# Script de arranque
+# Copia configuración de supervisord y script de inicio
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY start.sh /start.sh
 RUN chmod +x /start.sh
 
-CMD ["/start.sh"]
+EXPOSE 5900 8080
+
+CMD ["/usr/bin/supervisord"]
